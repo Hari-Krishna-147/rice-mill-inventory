@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daily Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <h3>📊 Daily Report</h3>
+
+    <form method="POST" class="mb-4">
+        <label>Select Date:</label>
+        <input type="date" name="date" class="form-control" value="{{ selected_date }}" required>
+        <button type="submit" class="btn btn-primary mt-2">View Report</button>
+    </form>
+
+    {% if selected_date %}
+        <h5>Stock Added on {{ selected_date }}</h5>
+        {% if stock_results %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Stock Type</th>
+                        <th>Quantity (Quintals)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stock_results %}
+                    <tr>
+                        <td>{{ stock.stock_type }}</td>
+                        <td>{{ stock.quantity }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No stock added on this date.</p>
+        {% endif %}
+
+        <h5 class="mt-4">Trips on {{ selected_date }}</h5>
+        {% if trip_results %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Lorry</th>
+                        <th>Stock Type</th>
+                        <th>Quantity</th>
+                        <th>Destination</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trip in trip_results %}
+                    <tr>
+                        <td>{{ trip.lorry.number }}</td>
+                        <td>{{ trip.stock_type }}</td>
+                        <td>{{ trip.quantity }}</td>
+                        <td>{{ trip.destination }}</td>
+                        <td>{{ trip.status }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No trips recorded on this date.</p>
+        {% endif %}
+    {% endif %}
+
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-4">Back to Dashboard</a>
+</div>
+</body>
+</html>

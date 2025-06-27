@@ -1,0 +1,46 @@
+<!-- templates/add_trip.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Trip</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <h3>Add New Trip</h3>
+    <form method="POST">
+        <div class="mb-3">
+            <label>Date</label>
+            <input type="date" name="date" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label>Select Lorry</label>
+            <select name="lorry_id" class="form-control" required>
+                {% for lorry in lorries %}
+                    <option value="{{ lorry.id }}">{{ lorry.number }} - {{ lorry.driver }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Stock Type</label>
+            <select name="stock_type" class="form-control" required>
+                <option value="Rice">Rice</option>
+                <option value="Paddy">Paddy</option>
+                <option value="Husk">Husk</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Quantity (in Quintals)</label>
+            <input type="number" name="quantity" step="0.01" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label>Destination</label>
+            <input type="text" name="destination" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success">Add Trip</button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back</a>
+    </form>
+</div>
+</body>
+</html>
