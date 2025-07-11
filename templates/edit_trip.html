@@ -1,55 +1,50 @@
-<!-- templates/edit_trip.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Trip</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body class="bg-light">
-<div class="container mt-5">
-    <h3>Edit Trip</h3>
+
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h2 class="mt-4 mb-4">Add New Trip</h2>
     <form method="POST">
-        <div class="mb-3">
+        <div class="form-group">
             <label>Date</label>
-            <input type="date" name="date" value="{{ trip.date }}" class="form-control" required>
+            <input type="date" name="date" class="form-control" required>
         </div>
-        <div class="mb-3">
+
+        <div class="form-group">
             <label>Select Lorry</label>
             <select name="lorry_id" class="form-control" required>
                 {% for lorry in lorries %}
-                    <option value="{{ lorry.id }}" {% if lorry.id == trip.lorry_id %}selected{% endif %}>
-                        {{ lorry.number }} - {{ lorry.driver }}
-                    </option>
+                <option value="{{ lorry.id }}">{{ lorry.lorry_number }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="mb-3">
+
+        <div class="form-group">
+            <label>Way Bill Number</label>
+            <input type="text" name="way_bill_no" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label>ACK Number</label>
+            <input type="text" name="ack_no" class="form-control" required>
+        </div>
+
+        <div class="form-group">
             <label>Stock Type</label>
-            <select name="stock_type" class="form-control" required>
-                <option value="Rice" {% if trip.stock_type == 'Rice' %}selected{% endif %}>Rice</option>
-                <option value="Paddy" {% if trip.stock_type == 'Paddy' %}selected{% endif %}>Paddy</option>
-                <option value="Husk" {% if trip.stock_type == 'Husk' %}selected{% endif %}>Husk</option>
-            </select>
+            <input type="text" name="stock_type" class="form-control" value="Rice" readonly>
         </div>
-        <div class="mb-3">
+
+        <div class="form-group">
             <label>Quantity (in Quintals)</label>
-            <input type="number" name="quantity" step="0.01" class="form-control" value="{{ trip.quantity }}" required>
+            <input type="number" name="quantity" class="form-control" required>
         </div>
-        <div class="mb-3">
+
+        <div class="form-group">
             <label>Destination</label>
-            <input type="text" name="destination" class="form-control" value="{{ trip.destination }}" required>
+            <input type="text" name="destination" class="form-control" required>
         </div>
-        <div class="mb-3">
-            <label>Status</label>
-            <select name="status" class="form-control">
-                <option value="In Progress" {% if trip.status == 'In Progress' %}selected{% endif %}>In Progress</option>
-                <option value="Delivered" {% if trip.status == 'Delivered' %}selected{% endif %}>Delivered</option>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Update Trip</button>
-        <a href="{{ url_for('view_trips') }}" class="btn btn-secondary">Cancel</a>
+
+        <button type="submit" class="btn btn-success">Add Trip</button>
+        <a href="/trips" class="btn btn-secondary">Back</a>
     </form>
 </div>
-</body>
-</html>
+{% endblock %}

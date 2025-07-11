@@ -1,30 +1,24 @@
-<!-- templates/add_lorry.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Lorry</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body class="bg-light">
-<div class="container mt-5">
-    <h3>Add New Lorry</h3>
-    <form method="POST">
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4">➕ Add New Lorry</h3>
+    <form method="POST" class="shadow-sm p-4 rounded bg-white">
         <div class="mb-3">
-            <label>Lorry Number</label>
+            <label class="form-label">Lorry Number</label>
             <input type="text" name="number" class="form-control" required>
         </div>
         <div class="mb-3">
-            <label>Driver Name</label>
+            <label class="form-label">Driver Name</label>
             <input type="text" name="driver" class="form-control" required>
         </div>
         <div class="mb-3">
-            <label>Capacity (in Quintals)</label>
+            <label class="form-label">Capacity (in Quintals)</label>
             <input type="number" step="0.1" name="capacity" class="form-control" required>
         </div>
-        <button type="submit" class="btn btn-success">Add Lorry</button>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back</a>
+        <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-success">✅ Add Lorry</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
     </form>
 </div>
-</body>
-</html>
+{% endblock %}
