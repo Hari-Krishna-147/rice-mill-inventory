@@ -4,6 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin, current_user
 from xhtml2pdf import pisa
 from io import BytesIO
+from models import db
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret-key-goes-here'
@@ -330,6 +331,10 @@ def toggle_theme():
     resp.set_cookie('theme', new_theme)
     return resp
 
+
+with app.app_context():
+    db.create_all()
+    
 # -------------------- RUN --------------------
 if __name__ == '__main__':
     app.run(debug=True)
