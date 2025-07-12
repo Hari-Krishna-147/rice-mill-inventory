@@ -1,9 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin, current_user
-from sqlalchemy import func
-from flask import make_response
 from xhtml2pdf import pisa
 from io import BytesIO
 
@@ -18,9 +16,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # -------------------- MODELS --------------------
-
 class User(UserMixin, db.Model):
-    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
@@ -44,8 +40,8 @@ class Trip(db.Model):
     stock_type = db.Column(db.String(100), nullable=False)
     quantity = db.Column(db.Float, nullable=False)
     destination = db.Column(db.String(100), nullable=False)
-    way_bill_no = db.Column(db.String(100))  # NEW FIELD
-    ack_no = db.Column(db.String(100))      # NEW FIELD
+    way_bill_no = db.Column(db.String(100))
+    ack_no = db.Column(db.String(100))
     status = db.Column(db.String(50), default='In Progress')
 
     lorry = db.relationship('Lorry', backref='trips')
@@ -54,6 +50,7 @@ class Trip(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# -------------------- AUTH --------------------
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -73,6 +70,45 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email already exists!', 'danger')
+        else:
+            new_user = User(email=email, password=password)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful!', 'success')
+            return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        user = User.query.filter_by(email=email).first()
+        if user:
+            return redirect(url_for('reset_password', user_id=user.id))
+        else:
+            flash('Email not found!', 'danger')
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password/<int:user_id>', methods=['GET', 'POST'])
+def reset_password(user_id):
+    user = User.query.get_or_404(user_id)
+    if request.method == 'POST':
+        new_password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
+        user.password = new_password
+        db.session.commit()
+        flash('Password updated! Please login.', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html', user=user)
+
+# -------------------- DASHBOARD --------------------
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -94,6 +130,7 @@ def dashboard():
         trip_data=trip_data
     )
 
+# -------------------- STOCK --------------------
 @app.route('/add_stock', methods=['GET', 'POST'])
 @login_required
 def add_stock():
@@ -115,6 +152,29 @@ def view_stock():
     stocks = Stock.query.all()
     return render_template('view_stock.html', stocks=stocks)
 
+@app.route('/edit_stock/<int:stock_id>', methods=['GET', 'POST'])
+@login_required
+def edit_stock(stock_id):
+    stock = Stock.query.get_or_404(stock_id)
+    if request.method == 'POST':
+        stock.date = request.form['date']
+        stock.stock_type = request.form['stock_type']
+        stock.quantity = float(request.form['quantity'])
+        db.session.commit()
+        flash('Stock updated!', 'success')
+        return redirect(url_for('view_stock'))
+    return render_template('edit_stock.html', stock=stock)
+
+@app.route('/delete_stock/<int:stock_id>')
+@login_required
+def delete_stock(stock_id):
+    stock = Stock.query.get_or_404(stock_id)
+    db.session.delete(stock)
+    db.session.commit()
+    flash('Stock deleted.', 'warning')
+    return redirect(url_for('view_stock'))
+
+# -------------------- LORRIES --------------------
 @app.route('/add_lorry', methods=['GET', 'POST'])
 @login_required
 def add_lorry():
@@ -161,6 +221,7 @@ def delete_lorry(lorry_id):
         flash('Lorry deleted.', 'success')
     return redirect(url_for('view_lorries'))
 
+# -------------------- TRIPS --------------------
 @app.route('/add_trip', methods=['GET', 'POST'])
 @login_required
 def add_trip():
@@ -177,9 +238,15 @@ def add_trip():
         )
         db.session.add(trip)
         db.session.commit()
-        flash('Trip added successfully!', 'success')
+        flash('Trip added!', 'success')
         return redirect(url_for('view_trips'))
     return render_template('add_trip.html', lorries=lorries)
+
+@app.route('/view_trips')
+@login_required
+def view_trips():
+    trips = Trip.query.all()
+    return render_template('view_trips.html', trips=trips)
 
 @app.route('/edit_trip/<int:trip_id>', methods=['GET', 'POST'])
 @login_required
@@ -192,8 +259,8 @@ def edit_trip(trip_id):
         trip.stock_type = request.form['stock_type']
         trip.quantity = float(request.form['quantity'])
         trip.destination = request.form['destination']
-        trip.way_bill_number = request.form['way_bill_no']
-        trip.ack_number = request.form['ack_no']
+        trip.way_bill_no = request.form['way_bill_no']
+        trip.ack_no = request.form['ack_no']
         trip.status = request.form['status']
         db.session.commit()
         flash('Trip updated!', 'success')
@@ -218,12 +285,7 @@ def update_status(trip_id):
     flash('Marked as Delivered', 'success')
     return redirect(url_for('view_trips'))
 
-@app.route('/view_trips')
-@login_required
-def view_trips():
-    trips = Trip.query.all()
-    return render_template('view_trips.html', trips=trips)
-
+# -------------------- REPORT --------------------
 @app.route('/report', methods=['GET', 'POST'])
 @login_required
 def report():
@@ -242,75 +304,12 @@ def report():
         trip_results=trip_results
     )
 
-@app.route('/edit_stock/<int:stock_id>', methods=['GET', 'POST'])
-@login_required
-def edit_stock(stock_id):
-    stock = Stock.query.get_or_404(stock_id)
-    if request.method == 'POST':
-        stock.date = request.form['date']
-        stock.stock_type = request.form['stock_type']
-        stock.quantity = float(request.form['quantity'])
-        db.session.commit()
-        flash('Stock record updated successfully!', 'success')
-        return redirect(url_for('view_stock'))
-    return render_template('edit_stock.html', stock=stock)
-
-@app.route('/delete_stock/<int:stock_id>')
-@login_required
-def delete_stock(stock_id):
-    stock = Stock.query.get_or_404(stock_id)
-    db.session.delete(stock)
-    db.session.commit()
-    flash('Stock record deleted.', 'warning')
-    return redirect(url_for('view_stock'))
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            flash('Email already exists!', 'danger')
-        else:
-            new_user = User(email=email, password=password)
-            db.session.add(new_user)
-            db.session.commit()
-            flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('login'))
-    return render_template('register.html')
-
-@app.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
-    if request.method == 'POST':
-        email = request.form['email']
-        user = User.query.filter_by(email=email).first()
-        if user:
-            return redirect(url_for('reset_password', user_id=user.id))
-        else:
-            flash('Email not found!', 'danger')
-    return render_template('forgot_password.html')
-
-@app.route('/reset_password/<int:user_id>', methods=['GET', 'POST'])
-def reset_password(user_id):
-    user = User.query.get_or_404(user_id)
-    if request.method == 'POST':
-        new_password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
-        user.password = new_password
-        db.session.commit()
-        flash('Password updated! Please login.', 'success')
-        return redirect(url_for('login'))
-    return render_template('reset_password.html', user=user)
-
-
-
-
 @app.route('/download_pdf')
 @login_required
 def download_pdf():
     date = request.args.get('date')
-    stock_results = Stock.query.filter_by(date=date, user_id=current_user.id).all()
-    trip_results = Trip.query.filter_by(date=date, user_id=current_user.id).all()
+    stock_results = Stock.query.filter_by(date=date).all()
+    trip_results = Trip.query.filter_by(date=date).all()
     html = render_template('report_pdf.html', selected_date=date, stock_results=stock_results, trip_results=trip_results)
 
     pdf = BytesIO()
@@ -321,20 +320,7 @@ def download_pdf():
     pdf.seek(0)
     return send_file(pdf, download_name=f'Report_{date}.pdf', as_attachment=True)
 
-
-@app.route('/export_report_pdf')
-@login_required
-def export_report_pdf():
-    stocks = Stock.query.filter_by(user_id=current_user.id).all()
-    trips = Trip.query.filter_by(user_id=current_user.id).all()
-    rendered = render_template('report_pdf.html', stocks=stocks, trips=trips)
-    pdf = BytesIO()
-    pisa.CreatePDF(rendered, dest=pdf)
-    pdf.seek(0)
-    return send_file(pdf, as_attachment=True, download_name='report.pdf', mimetype='application/pdf')
-
-
-
+# -------------------- THEME SWITCH --------------------
 @app.route('/toggle_theme')
 @login_required
 def toggle_theme():
@@ -344,7 +330,6 @@ def toggle_theme():
     resp.set_cookie('theme', new_theme)
     return resp
 
-
-# -------------------- RUN APP --------------------
+# -------------------- RUN --------------------
 if __name__ == '__main__':
     app.run(debug=True)
